@@ -24,19 +24,33 @@ void jks_hash_table_destroy(jks_hash_table_t *hash_table)
 
 static jks_list_t *get_bucket(jks_array_t *array, uint32_t hash)
 {
+	if (!array->size)
+		return NULL;
 	uint32_t bucket = hash & array->size;
 	return jks_array_get(array, bucket);
+}
+
+static uint32_t npot(uint32_t v)
+{
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	v++;
+	return v;
 }
 
 static bool rehash(jks_hash_table_t *hash_table, uint32_t size)
 {
 	jks_array_t new_array;
 	jks_array_init(&new_array, sizeof(jks_list_t), (jks_array_destructor_t)jks_list_destroy);
-	if (!jks_array_resize(&new_array, size))
+	if (!jks_array_resize(&new_array, npot(size)))
 		return false;
 	JKS_ARRAY_FOREACH(iterator, &new_array)
 	{
-		jks_list_init(jks_array_iterator_get(&iterator), hash_table->data_size, hash_table->destructor);
+		jks_list_init(jks_array_iterator_get(&iterator), sizeof(uint32_t) + hash_table->data_size, hash_table->destructor);
 	}
 	JKS_HASH_TABLE_FOREACH(iterator, hash_table)
 	{
