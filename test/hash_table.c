@@ -30,5 +30,6 @@ void test_hash_table()
 		++i;
 	}
 	assert(i == 500);
+	jks_hash_table_destroy(&hash_table);
 	printf("[OK] test_hash_table\n");
 }

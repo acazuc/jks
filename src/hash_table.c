@@ -9,6 +9,8 @@
 #define REHASH_HIGH_THRESHOLD .5
 #define REHASH_HIGH_SIZE 2
 
+#define ITEM_DATA(item) ((uint8_t*)item + sizeof(uint32_t))
+
 void jks_hash_table_init(jks_hash_table_t *hash_table, uint32_t data_size, jks_hash_table_destructor_t destructor)
 {
 	jks_array_init(&hash_table->array, sizeof(jks_list_t), (jks_array_destructor_t)jks_list_destroy);
@@ -24,9 +26,7 @@ void jks_hash_table_destroy(jks_hash_table_t *hash_table)
 
 static jks_list_t *get_bucket(jks_array_t *array, uint32_t hash)
 {
-	if (!array->size)
-		return NULL;
-	uint32_t bucket = hash & array->size;
+	uint32_t bucket = hash & (array->size - 1);
 	return jks_array_get(array, bucket);
 }
 
@@ -56,14 +56,14 @@ static bool rehash(jks_hash_table_t *hash_table, uint32_t size)
 	{
 		uint32_t hash = jks_hash_table_iterator_get_hash(&iterator);
 		jks_list_t *bucket = get_bucket(&new_array, hash);
-		void *data = jks_list_push_back(bucket, jks_hash_table_iterator_get(&iterator));
+		void *data = jks_list_push_back(bucket, (uint8_t*)jks_hash_table_iterator_get(&iterator) - sizeof(uint32_t));
 		if (!data)
 		{
 			jks_array_destroy(&new_array);
 			return false;
 		}
 		*(uint32_t*)data = hash;
-		memmove((uint8_t*)data + sizeof(uint32_t), jks_hash_table_iterator_get(&iterator), hash_table->data_size);
+		memmove(ITEM_DATA(data), jks_hash_table_iterator_get(&iterator), hash_table->data_size);
 	}
 	jks_array_destroy(&hash_table->array);
 	hash_table->array = new_array;
@@ -82,37 +82,43 @@ void *jks_hash_table_get(jks_hash_table_t *hash_table, uint32_t hash)
 	if (!hash_table->size)
 		return NULL;
 	jks_list_t *bucket = get_bucket(&hash_table->array, hash);
-	if (!bucket)
-		return NULL;
 	JKS_LIST_FOREACH(iterator, bucket)
 	{
 		void *data = jks_list_iterator_get(&iterator);
 		uint32_t h = *(uint32_t*)data;
 		if (h != hash)
 			continue;
-		return ((uint8_t*)data) + sizeof(uint32_t);
+		return ITEM_DATA(data);
 	}
 	return NULL;
 }
 
 void *jks_hash_table_set(jks_hash_table_t *hash_table, uint32_t hash, void *data)
 {
-	jks_list_t *bucket = get_bucket(&hash_table->array, hash);
-	if (bucket)
+	jks_list_t *bucket;
+	if (hash_table->array.size)
 	{
-		JKS_LIST_FOREACH(iterator, bucket)
+		bucket = get_bucket(&hash_table->array, hash);
+		if (bucket->size)
 		{
-			void *iter_data = jks_list_iterator_get(&iterator);
-			uint32_t h = *(uint32_t*)iter_data;
-			if (h != hash)
-				continue;
-			void *dst = (uint8_t*)iter_data + sizeof(uint32_t);
-			if (data)
-				memmove(dst, data, hash_table->data_size);
-			return dst;
+			JKS_LIST_FOREACH(iterator, bucket)
+			{
+				void *iter_data = jks_list_iterator_get(&iterator);
+				uint32_t h = *(uint32_t*)iter_data;
+				if (h != hash)
+					continue;
+				void *dst = ITEM_DATA(iter_data);
+				if (data)
+					memmove(dst, data, hash_table->data_size);
+				return dst;
+			}
 		}
 	}
-	if (hash_table->size + 1 > hash_table->array.size * REHASH_HIGH_THRESHOLD)
+	else
+	{
+		bucket = NULL;
+	}
+	if (bucket == NULL || hash_table->size + 1 > hash_table->array.size * REHASH_HIGH_THRESHOLD)
 	{
 		uint32_t rehash_size = hash_table->array.size * REHASH_HIGH_SIZE;
 		if (rehash_size == 0)
@@ -120,14 +126,12 @@ void *jks_hash_table_set(jks_hash_table_t *hash_table, uint32_t hash, void *data
 		if (!rehash(hash_table, rehash_size))
 			return NULL;
 		bucket = get_bucket(&hash_table->array, hash);
-		if (!bucket)
-			return NULL;
 	}
 	void *list_data = jks_list_push_back(bucket, NULL);
 	if (!list_data)
 		return NULL;
 	*(uint32_t*)list_data = hash;
-	void *dst = (uint8_t*)list_data + sizeof(uint32_t);
+	void *dst = ITEM_DATA(list_data);
 	if (data)
 		memmove(dst, data, hash_table->data_size);
 	hash_table->size++;
@@ -181,7 +185,7 @@ jks_hash_table_iterator_t jks_hash_table_iterator_find(jks_hash_table_t *hash_ta
 {
 	if (!hash_table->size)
 		return jks_hash_table_iterator_end(hash_table);
-	uint32_t bucket_id = hash & hash_table->array.size;
+	uint32_t bucket_id = hash & (hash_table->array.size - 1);
 	jks_list_t *bucket = jks_array_get(&hash_table->array, bucket_id);
 	JKS_LIST_FOREACH(list_iterator, bucket)
 	{
@@ -200,7 +204,7 @@ jks_hash_table_iterator_t jks_hash_table_iterator_find(jks_hash_table_t *hash_ta
 
 void *jks_hash_table_iterator_get(jks_hash_table_iterator_t *iterator)
 {
-	return (uint8_t*)jks_list_iterator_get(&iterator->list_iterator) + sizeof(uint32_t);
+	return ITEM_DATA(jks_list_iterator_get(&iterator->list_iterator));
 }
 
 uint32_t jks_hash_table_iterator_get_hash(jks_hash_table_iterator_t *iterator)

@@ -29,5 +29,6 @@ void test_list()
 	assert(*(uint32_t*)data == 4);
 	assert((data = jks_list_get(&list, 1)));
 	assert(*(uint32_t*)data == 6);
+	jks_list_destroy(&list);
 	printf("[OK] test_list\n");
 }

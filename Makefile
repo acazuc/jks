@@ -48,7 +48,7 @@ $(TEST_PATH)%.o: $(TEST_PATH)%.c
 
 test: $(TEST_OBJS)
 	@echo "CC test"
-	@$(CC) -o $(TEST_PATH)/test $^ -L . -ljks
+	@$(CC) $(CFLAGS) -o $(TEST_PATH)/test $^ -L . -ljks
 
 odir:
 	@mkdir -p $(OBJS_PATH)

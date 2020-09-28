@@ -26,5 +26,6 @@ void test_array()
 	assert(array.capacity == 256);
 	assert(jks_array_shrink(&array));
 	assert(array.capacity == 2);
+	jks_array_destroy(&array);
 	printf("[OK] test_array\n");
 }

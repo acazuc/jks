@@ -34,13 +34,18 @@ void jks_list_destroy(jks_list_t *list)
 	}
 }
 
+static jks_list_item_t *create_item(jks_list_t *list)
+{
+	return malloc(sizeof(jks_list_item_t) + list->data_size);
+}
+
 bool jks_list_resize(jks_list_t *list, uint32_t size)
 {
 	if (list->size == size)
 		return true;
 	if (list->size < size)
 	{
-		jks_list_item_t *new_head = malloc(sizeof(*new_head) + list->data_size);
+		jks_list_item_t *new_head = create_item(list);
 		if (new_head == NULL)
 			return false;
 		new_head->prev = list->head;
@@ -49,7 +54,7 @@ bool jks_list_resize(jks_list_t *list, uint32_t size)
 		uint32_t to_alloc = size - list->size - 1;
 		while (to_alloc)
 		{
-			jks_list_item_t *tmp = malloc(sizeof(*tmp) + list->data_size);
+			jks_list_item_t *tmp = create_item(list);
 			if (!tmp)
 			{
 				jks_list_item_t *item = new_head;
@@ -130,7 +135,7 @@ void *jks_list_get(jks_list_t *list, uint32_t offset)
 
 void *jks_list_push_front(jks_list_t *list, void *data)
 {
-	jks_list_item_t *item = malloc(sizeof(*item) + list->data_size);
+	jks_list_item_t *item = create_item(list);
 	if (!item)
 		return NULL;
 	item->prev = NULL;
@@ -149,7 +154,7 @@ void *jks_list_push_front(jks_list_t *list, void *data)
 
 void *jks_list_push_back(jks_list_t *list, void *data)
 {
-	jks_list_item_t *item = malloc(sizeof(*item) + list->data_size);
+	jks_list_item_t *item = create_item(list);
 	if (!item)
 		return NULL;
 	item->prev = list->tail;
@@ -179,7 +184,7 @@ void *jks_list_push(jks_list_t *list, void *data, uint32_t offset)
 		if (!item)
 			return NULL;
 	}
-	jks_list_item_t *new_item = malloc(sizeof(*new_item) + list->data_size);
+	jks_list_item_t *new_item = create_item(list);
 	if (!new_item)
 		return NULL;
 	if (item)
@@ -255,7 +260,7 @@ jks_list_iterator_t jks_list_iterator_find(jks_list_t *list, uint32_t offset)
 
 void *jks_list_iterator_get(jks_list_iterator_t *iterator)
 {
-	return ((uint8_t*)iterator->item) + sizeof(*iterator->item);
+	return (uint8_t*)iterator->item + sizeof(*iterator->item);
 }
 
 void jks_list_iterator_erase(jks_list_t *list, jks_list_iterator_t *iterator)
