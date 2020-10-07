@@ -29,6 +29,7 @@ void jks_array_init(jks_array_t *array, uint32_t data_size, jks_array_destructor
 void jks_array_destroy(jks_array_t *array);
 
 bool jks_array_resize(jks_array_t *array, uint32_t size);
+void *jks_array_grow(jks_array_t *array, uint32_t size);
 bool jks_array_reserve(jks_array_t *array, uint32_t capacity);
 bool jks_array_shrink(jks_array_t *array);
 

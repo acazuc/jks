@@ -59,6 +59,15 @@ bool jks_array_resize(jks_array_t *array, uint32_t size)
 	return true;
 }
 
+void *jks_array_grow(jks_array_t *array, uint32_t size)
+{
+	if (!size)
+		return NULL;
+	if (!jks_array_resize(array, array->size + size))
+		return NULL;
+	return jks_array_get(array, array->size - size);
+}
+
 bool jks_array_reserve(jks_array_t *array, uint32_t capacity)
 {
 	if (array->capacity >= capacity)
