@@ -2,8 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define ITEM_DATA(item) ((uint8_t*)item + sizeof(*item))
-
 void jks_list_init(jks_list_t *list, uint32_t data_size, jks_list_destructor_t destructor)
 {
 	list->head = NULL;
@@ -20,7 +18,7 @@ void jks_list_destroy(jks_list_t *list)
 		for (jks_list_item_t *item = list->head, *next; item; item = next)
 		{
 			next = item->next;
-			list->destructor(ITEM_DATA(item));
+			list->destructor(item->data);
 			free(item);
 		}
 	}
@@ -86,7 +84,7 @@ bool jks_list_resize(jks_list_t *list, uint32_t size)
 				item->prev->next = NULL;
 			jks_list_item_t *next = item->prev;
 			if (list->destructor)
-				list->destructor(ITEM_DATA(item));
+				list->destructor(item->data);
 			free(item);
 			item = next;
 			to_remove--;
@@ -98,7 +96,7 @@ bool jks_list_resize(jks_list_t *list, uint32_t size)
 	return true;
 }
 
-static jks_list_item_t *get_item(jks_list_t *list, uint32_t offset)
+static jks_list_item_t *get_item(const jks_list_t *list, uint32_t offset)
 {
 	if (offset >= list->size)
 		return NULL;
@@ -125,12 +123,12 @@ static jks_list_item_t *get_item(jks_list_t *list, uint32_t offset)
 	}
 }
 
-void *jks_list_get(jks_list_t *list, uint32_t offset)
+void *jks_list_get(const jks_list_t *list, uint32_t offset)
 {
 	jks_list_item_t *item = get_item(list, offset);
 	if (!item)
 		return NULL;
-	return ITEM_DATA(item);
+	return item->data;
 }
 
 void *jks_list_push_front(jks_list_t *list, void *data)
@@ -140,7 +138,7 @@ void *jks_list_push_front(jks_list_t *list, void *data)
 		return NULL;
 	item->prev = NULL;
 	item->next = list->head;
-	void *dst = ITEM_DATA(item);
+	void *dst = item->data;
 	if (data)
 		memcpy(dst, data, list->data_size);
 	if (list->head)
@@ -159,7 +157,7 @@ void *jks_list_push_back(jks_list_t *list, void *data)
 		return NULL;
 	item->prev = list->tail;
 	item->next = NULL;
-	void *dst = ITEM_DATA(item);
+	void *dst = item->data;
 	if (data)
 		memcpy(dst, data, list->data_size);
 	if (list->tail)
@@ -212,7 +210,7 @@ void *jks_list_push(jks_list_t *list, void *data, uint32_t offset)
 			list->tail = new_item;
 		}
 	}
-	void *dst = ITEM_DATA(item);
+	void *dst = item->data;
 	if (data)
 		memcpy(dst, data, list->data_size);
 	list->size++;
@@ -233,37 +231,37 @@ bool jks_list_erase(jks_list_t *list, uint32_t offset)
 	if (item->prev)
 		item->prev->next = item->next;
 	if (list->destructor)
-		list->destructor(ITEM_DATA(item));
+		list->destructor(item->data);
 	free(item);
 	list->size--;
 	return true;
 }
 
-jks_list_iterator_t jks_list_iterator_begin(jks_list_t *list)
+jks_list_iterator_t jks_list_iterator_begin(const jks_list_t *list)
 {
 	jks_list_iterator_t iter = {list->head};
 	return iter;
 }
 
-jks_list_iterator_t jks_list_iterator_end(jks_list_t *list)
+jks_list_iterator_t jks_list_iterator_end(const jks_list_t *list)
 {
 	(void)list;
 	jks_list_iterator_t iter = {NULL};
 	return iter;
 }
 
-jks_list_iterator_t jks_list_iterator_find(jks_list_t *list, uint32_t offset)
+jks_list_iterator_t jks_list_iterator_find(const jks_list_t *list, uint32_t offset)
 {
 	jks_list_iterator_t iter = {get_item(list, offset)};
 	return iter;
 }
 
-void *jks_list_iterator_get(jks_list_iterator_t *iterator)
+void *jks_list_iterator_get(const jks_list_iterator_t *iterator)
 {
 	return (uint8_t*)iterator->item + sizeof(*iterator->item);
 }
 
-void jks_list_iterator_erase(jks_list_t *list, jks_list_iterator_t *iterator)
+void jks_list_iterator_erase(jks_list_t *list, const jks_list_iterator_t *iterator)
 {
 	jks_list_item_t *item = iterator->item;
 	if (item == list->head)
@@ -275,11 +273,11 @@ void jks_list_iterator_erase(jks_list_t *list, jks_list_iterator_t *iterator)
 	if (item->prev)
 		item->prev->next = item->next;
 	if (list->destructor)
-		list->destructor(ITEM_DATA(item));
+		list->destructor(item->data);
 	free(item);
 }
 
-bool jks_list_iterator_is_end(jks_list_t *list, jks_list_iterator_t *iterator)
+bool jks_list_iterator_is_end(const jks_list_t *list, const jks_list_iterator_t *iterator)
 {
 	(void)list;
 	return iterator->item == NULL;

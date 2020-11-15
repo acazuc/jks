@@ -10,7 +10,7 @@ SRCS_PATH = src/
 
 SRCS_NAME = array.c \
 	    list.c \
-	    hash_table.c \
+	    hmap.c \
 
 SRCS = $(addprefix $(SRCS_PATH), $(SRCS_NAME))
 
@@ -25,7 +25,7 @@ TEST_PATH = test/
 TEST_NAME = test.c \
 	    array.c \
 	    list.c \
-	    hash_table.c \
+	    hmap.c \
 
 TEST_SRCS = $(addprefix $(TEST_PATH), $(TEST_NAME))
 

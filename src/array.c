@@ -97,11 +97,6 @@ bool jks_array_shrink(jks_array_t *array)
 	return true;
 }
 
-void *jks_array_get(jks_array_t *array, uint32_t offset)
-{
-	return ((uint8_t*)array->data) + array->data_size * offset;
-}
-
 void *jks_array_push_front(jks_array_t *array, void *data)
 {
 	if (!jks_array_resize(array, array->size + 1))
@@ -145,19 +140,19 @@ bool jks_array_erase(jks_array_t *array, uint32_t offset)
 	return true;
 }
 
-jks_array_iterator_t jks_array_iterator_begin(jks_array_t *array)
+jks_array_iterator_t jks_array_iterator_begin(const jks_array_t *array)
 {
 	jks_array_iterator_t iter = {array->data, array->data_size};
 	return iter;
 }
 
-jks_array_iterator_t jks_array_iterator_end(jks_array_t *array)
+jks_array_iterator_t jks_array_iterator_end(const jks_array_t *array)
 {
 	jks_array_iterator_t iter = {(uint8_t*)array->data + array->size * array->data_size, array->data_size};
 	return iter;
 }
 
-jks_array_iterator_t jks_array_iterator_find(jks_array_t *array, uint32_t offset)
+jks_array_iterator_t jks_array_iterator_find(const jks_array_t *array, uint32_t offset)
 {
 	if (offset >= array->size)
 		return jks_array_iterator_end(array);
@@ -165,12 +160,12 @@ jks_array_iterator_t jks_array_iterator_find(jks_array_t *array, uint32_t offset
 	return iter;
 }
 
-void *jks_array_iterator_get(jks_array_iterator_t *iterator)
+void *jks_array_iterator_get(const jks_array_iterator_t *iterator)
 {
 	return iterator->data;
 }
 
-void jks_array_iterator_erase(jks_array_t *array, jks_array_iterator_t *iterator)
+void jks_array_iterator_erase(jks_array_t *array, const jks_array_iterator_t *iterator)
 {
 	if (array->destructor)
 		array->destructor(iterator->data);
@@ -179,7 +174,7 @@ void jks_array_iterator_erase(jks_array_t *array, jks_array_iterator_t *iterator
 	array->size--;
 }
 
-bool jks_array_iterator_is_end(jks_array_t *array, jks_array_iterator_t *iterator)
+bool jks_array_iterator_is_end(const jks_array_t *array, const jks_array_iterator_t *iterator)
 {
 	return iterator->data == (uint8_t*)array->data + array->size * array->data_size;
 }

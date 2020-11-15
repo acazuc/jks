@@ -3,6 +3,6 @@
 
 void test_array();
 void test_list();
-void test_hash_table();
+void test_hmap();
 
 #endif
