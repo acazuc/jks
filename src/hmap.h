@@ -53,7 +53,9 @@ void jks_hmap_iterator_next(const jks_hmap_t *hmap, jks_hmap_iterator_t *iterato
 uint32_t jks_hmap_hash_uint32(const void *key);
 int jks_hmap_cmp_uint32(const void *k1, const void *k2);
 uint32_t jks_hmap_hash_string(const void *key);
-int jks_hmap_cmp_stirng(const void *k1, const void *k2);
+int jks_hmap_cmp_string(const void *k1, const void *k2);
+uint32_t jks_hmap_hash_ptr(const void *key);
+int jks_hmap_cmp_ptr(const void *k1, const void *k2);
 
 #define JKS_HMAP_FOREACH(iterator, hmap) \
 	for (jks_hmap_iterator_t iterator = jks_hmap_iterator_begin(hmap); !jks_hmap_iterator_is_end(hmap, &iterator); jks_hmap_iterator_next(hmap, &iterator))

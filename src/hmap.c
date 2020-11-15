@@ -122,19 +122,16 @@ bool jks_hmap_set(jks_hmap_t *hmap, void *key, void *value)
 	if (hmap->buckets_count)
 	{
 		bucket = get_bucket(hmap->buckets, hmap->buckets_count, hash);
-		if (!JKS_SLIST_EMPTY(bucket))
+		jks_hmap_object_t *object;
+		JKS_SLIST_FOREACH(object, bucket, chain)
 		{
-			jks_hmap_object_t *object;
-			JKS_SLIST_FOREACH(object, bucket, chain)
-			{
-				if (hash != object->hash || hmap->cmp_fn(object->key, key))
-					continue;
-				if (hmap->destructor)
-					hmap->destructor(object->key, object->val);
-				object->key = key;
-				object->val = value;
-				return true;
-			}
+			if (hash != object->hash || hmap->cmp_fn(object->key, key))
+				continue;
+			if (hmap->destructor)
+				hmap->destructor(object->key, object->val);
+			object->key = key;
+			object->val = value;
+			return true;
 		}
 	}
 	else
@@ -172,7 +169,10 @@ bool jks_hmap_erase(jks_hmap_t *hmap, const void *key)
 	{
 		if (hash != object->hash || hmap->cmp_fn(key, object->key))
 			continue;
+		if (hmap->destructor)
+			hmap->destructor(object->key, object->val);
 		JKS_SLIST_REMOVE(bucket, object, jks_hmap_object_t, chain);
+		free(object);
 		hmap->size--;
 		break;
 	}
@@ -233,7 +233,10 @@ void *jks_hmap_iterator_get_value(const jks_hmap_iterator_t *iterator)
 
 void jks_hmap_iterator_erase(jks_hmap_t *hmap, const jks_hmap_iterator_t *iterator)
 {
+	if (hmap->destructor)
+		hmap->destructor(iterator->object->key, iterator->object->val);
 	JKS_SLIST_REMOVE(iterator->bucket, iterator->object, jks_hmap_object_t, chain);
+	free(iterator->object);
 	hmap->size--;
 }
 
@@ -285,4 +288,19 @@ uint32_t jks_hmap_hash_string(const void *key)
 int jks_hmap_cmp_string(const void *k1, const void *k2)
 {
 	return strcmp(k1, k2);
+}
+
+uint32_t jks_hmap_hash_ptr(const void *key)
+{
+	if (sizeof(key) == 4)
+		return (uint32_t)(intptr_t)key;
+	uint32_t hash = 5381;
+	hash = ((hash << 5) + hash) + (uint32_t)(intptr_t)key;
+	hash = ((hash << 5) + hash) + (uint32_t)((intptr_t)key >> 32);
+	return hash;
+}
+
+int jks_hmap_cmp_ptr(const void *k1, const void *k2)
+{
+	return (uint8_t*)k1 - (uint8_t*)k2;
 }
