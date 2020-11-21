@@ -39,12 +39,10 @@ bool jks_array_resize(jks_array_t *array, uint32_t size)
 		return true;
 	if (size >= array->capacity)
 	{
-		uint32_t new_capacity;
-		if (array->capacity != 0)
-			new_capacity = npot(array->capacity * 2);
-		else
-			new_capacity = npot(size);
-		if (!jks_array_reserve(array, new_capacity))
+		uint32_t new_capacity = size;
+		if (array->capacity * 2 > new_capacity)
+			new_capacity = array->capacity * 2;
+		if (!jks_array_reserve(array, npot(new_capacity)))
 			return false;
 	}
 	if (size < array->size)
