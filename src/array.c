@@ -158,11 +158,6 @@ jks_array_iterator_t jks_array_iterator_find(const jks_array_t *array, uint32_t 
 	return iter;
 }
 
-void *jks_array_iterator_get(const jks_array_iterator_t *iterator)
-{
-	return iterator->data;
-}
-
 void jks_array_iterator_erase(jks_array_t *array, const jks_array_iterator_t *iterator)
 {
 	if (array->destructor)

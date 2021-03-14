@@ -131,42 +131,18 @@ void *jks_list_get(const jks_list_t *list, uint32_t offset)
 	return item->data;
 }
 
-void *jks_list_push_front(jks_list_t *list, void *data)
+void *jks_list_get_head(const jks_list_t *list)
 {
-	jks_list_item_t *item = create_item(list);
-	if (!item)
+	if (!list->head)
 		return NULL;
-	item->prev = NULL;
-	item->next = list->head;
-	void *dst = item->data;
-	if (data)
-		memcpy(dst, data, list->data_size);
-	if (list->head)
-		list->head->prev = item;
-	list->head = item;
-	if (!list->tail)
-		list->tail = item;
-	list->size++;
-	return dst;
+	return list->head->data;
 }
 
-void *jks_list_push_back(jks_list_t *list, void *data)
+void *jks_list_get_tail(const jks_list_t *list)
 {
-	jks_list_item_t *item = create_item(list);
-	if (!item)
+	if (!list->tail)
 		return NULL;
-	item->prev = list->tail;
-	item->next = NULL;
-	void *dst = item->data;
-	if (data)
-		memcpy(dst, data, list->data_size);
-	if (list->tail)
-		list->tail->next = item;
-	list->tail = item;
-	if (!list->head)
-		list->head = item;
-	list->size++;
-	return dst;
+	return list->tail->data;
 }
 
 void *jks_list_push(jks_list_t *list, void *data, uint32_t offset)
@@ -217,6 +193,44 @@ void *jks_list_push(jks_list_t *list, void *data, uint32_t offset)
 	return dst;
 }
 
+void *jks_list_push_head(jks_list_t *list, void *data)
+{
+	jks_list_item_t *item = create_item(list);
+	if (!item)
+		return NULL;
+	item->prev = NULL;
+	item->next = list->head;
+	void *dst = item->data;
+	if (data)
+		memcpy(dst, data, list->data_size);
+	if (list->head)
+		list->head->prev = item;
+	list->head = item;
+	if (!list->tail)
+		list->tail = item;
+	list->size++;
+	return dst;
+}
+
+void *jks_list_push_tail(jks_list_t *list, void *data)
+{
+	jks_list_item_t *item = create_item(list);
+	if (!item)
+		return NULL;
+	item->prev = list->tail;
+	item->next = NULL;
+	void *dst = item->data;
+	if (data)
+		memcpy(dst, data, list->data_size);
+	if (list->tail)
+		list->tail->next = item;
+	list->tail = item;
+	if (!list->head)
+		list->head = item;
+	list->size++;
+	return dst;
+}
+
 bool jks_list_erase(jks_list_t *list, uint32_t offset)
 {
 	jks_list_item_t *item = get_item(list, offset);
@@ -232,6 +246,40 @@ bool jks_list_erase(jks_list_t *list, uint32_t offset)
 		item->prev->next = item->next;
 	if (list->destructor)
 		list->destructor(item->data);
+	free(item);
+	list->size--;
+	return true;
+}
+
+bool jks_list_erase_head(jks_list_t *list)
+{
+	jks_list_item_t *item = list->head;
+	if (!item)
+		return false;
+	if (list->destructor)
+		list->destructor(item->data);
+	if (item == list->tail)
+		list->tail = NULL;
+	list->head = item->next;
+	if (list->head)
+		list->head->prev = NULL;
+	free(item);
+	list->size--;
+	return true;
+}
+
+bool jks_list_erase_tail(jks_list_t *list)
+{
+	jks_list_item_t *item = list->tail;
+	if (!item)
+		return false;
+	if (list->destructor)
+		list->destructor(item->data);
+	if (item == list->head)
+		list->head = NULL;
+	list->tail = item->prev;
+	if (list->tail)
+		list->tail->next = NULL;
 	free(item);
 	list->size--;
 	return true;
@@ -274,6 +322,7 @@ void jks_list_iterator_erase(jks_list_t *list, const jks_list_iterator_t *iterat
 		item->prev->next = item->next;
 	if (list->destructor)
 		list->destructor(item->data);
+	list->size--;
 	free(item);
 }
 

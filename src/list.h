@@ -39,12 +39,16 @@ void jks_list_destroy(jks_list_t *list);
 bool jks_list_resize(jks_list_t *list, uint32_t size);
 
 void *jks_list_get(const jks_list_t *list, uint32_t offset);
+void *jks_list_get_head(const jks_list_t *list);
+void *jks_list_get_tail(const jks_list_t *list);
 
-void *jks_list_push_front(jks_list_t *list, void *data);
-void *jks_list_push_back(jks_list_t *list, void *data);
 void *jks_list_push(jks_list_t *list, void *data, uint32_t offset);
+void *jks_list_push_head(jks_list_t *list, void *data);
+void *jks_list_push_tail(jks_list_t *list, void *data);
 
 bool jks_list_erase(jks_list_t *list, uint32_t offset);
+bool jks_list_erase_head(jks_list_t *list);
+bool jks_list_erase_tail(jks_list_t *list);
 
 jks_list_iterator_t jks_list_iterator_begin(const jks_list_t *list);
 jks_list_iterator_t jks_list_iterator_end(const jks_list_t *list);

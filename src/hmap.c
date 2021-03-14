@@ -100,7 +100,7 @@ bool jks_hmap_reserve(jks_hmap_t *hmap, uint32_t capacity)
 bool jks_hmap_get(jks_hmap_t *hmap, const void *key, void **value)
 {
 	if (!hmap->size)
-		return NULL;
+		return false;
 	uint32_t hash = hmap->hash_fn(key);
 	jks_hmap_bucket_t *bucket = get_bucket(hmap->buckets, hmap->buckets_count, hash);
 	jks_hmap_object_t *object;
