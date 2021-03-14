@@ -14,7 +14,7 @@ struct jks_hmap_object_s
 	JKS_SLIST_ENTRY(struct jks_hmap_object_s) chain;
 	uint32_t hash;
 	void *key;
-	void *val; //XXX: char val[]; ?
+	char val[];
 };
 
 JKS_SLIST_HEAD(jks_hmap_bucket_s, jks_hmap_object_t);
@@ -31,11 +31,12 @@ static void bucket_destroy(jks_hmap_t *hmap, jks_hmap_bucket_t *bucket)
 	}
 }
 
-void jks_hmap_init(jks_hmap_t *hmap, jks_hmap_destructor_t destructor, jks_hmap_hash_fn_t hash_fn, jks_hmap_cmp_fn_t cmp_fn)
+void jks_hmap_init(jks_hmap_t *hmap, uint32_t value_size, jks_hmap_destructor_t destructor, jks_hmap_hash_fn_t hash_fn, jks_hmap_cmp_fn_t cmp_fn)
 {
 	hmap->buckets = NULL;
 	hmap->buckets_count = 0;
 	hmap->size = 0;
+	hmap->value_size = value_size;
 	hmap->destructor = destructor;
 	hmap->hash_fn = hash_fn;
 	hmap->cmp_fn = cmp_fn;
@@ -97,25 +98,22 @@ bool jks_hmap_reserve(jks_hmap_t *hmap, uint32_t capacity)
 	return rehash(hmap, capacity);
 }
 
-bool jks_hmap_get(jks_hmap_t *hmap, const void *key, void **value)
+void *jks_hmap_get(jks_hmap_t *hmap, const void *key)
 {
 	if (!hmap->size)
-		return false;
+		return NULL;
 	uint32_t hash = hmap->hash_fn(key);
 	jks_hmap_bucket_t *bucket = get_bucket(hmap->buckets, hmap->buckets_count, hash);
 	jks_hmap_object_t *object;
 	JKS_SLIST_FOREACH(object, bucket, chain)
 	{
 		if (object->hash == hash && !hmap->cmp_fn(object->key, key))
-		{
-			*value = object->val;
-			return true;
-		}
+			return object->val;
 	}
-	return false;
+	return NULL;
 }
 
-bool jks_hmap_set(jks_hmap_t *hmap, void *key, void *value)
+void *jks_hmap_set(jks_hmap_t *hmap, void *key, void *value)
 {
 	jks_hmap_bucket_t *bucket;
 	uint32_t hash = hmap->hash_fn(key);
@@ -130,8 +128,8 @@ bool jks_hmap_set(jks_hmap_t *hmap, void *key, void *value)
 			if (hmap->destructor)
 				hmap->destructor(object->key, object->val);
 			object->key = key;
-			object->val = value;
-			return true;
+			memcpy(object->val, value, hmap->value_size);
+			return object->val;
 		}
 	}
 	else
@@ -144,18 +142,18 @@ bool jks_hmap_set(jks_hmap_t *hmap, void *key, void *value)
 		if (rehash_size == 0)
 			rehash_size = 32;
 		if (!rehash(hmap, rehash_size))
-			return false;
+			return NULL;
 		bucket = get_bucket(hmap->buckets, hmap->buckets_count, hash);
 	}
-	jks_hmap_object_t *object = malloc(sizeof(*object));
+	jks_hmap_object_t *object = malloc(sizeof(*object) + hmap->value_size);
 	if (!object)
-		return false;
+		return NULL;
 	object->hash = hash;
 	object->key = key;
-	object->val = value;
+	memcpy(object->val, value, hmap->value_size);
 	JKS_SLIST_INSERT_HEAD(bucket, object, chain);
 	hmap->size++;
-	return true;
+	return object->val;
 }
 
 bool jks_hmap_erase(jks_hmap_t *hmap, const void *key)

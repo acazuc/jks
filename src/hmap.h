@@ -26,18 +26,19 @@ typedef struct jks_hmap_s
 	jks_hmap_bucket_t *buckets;
 	uint32_t buckets_count;
 	uint32_t size;
+	uint32_t value_size;
 	jks_hmap_destructor_t destructor;
 	jks_hmap_hash_fn_t hash_fn;
 	jks_hmap_cmp_fn_t cmp_fn;
 } jks_hmap_t;
 
-void jks_hmap_init(jks_hmap_t *hmap, jks_hmap_destructor_t destructor, jks_hmap_hash_fn_t hash_fn, jks_hmap_cmp_fn_t cmp_fn);
+void jks_hmap_init(jks_hmap_t *hmap, uint32_t value_size, jks_hmap_destructor_t destructor, jks_hmap_hash_fn_t hash_fn, jks_hmap_cmp_fn_t cmp_fn);
 void jks_hmap_destroy(jks_hmap_t *hmap);
 
 bool jks_hmap_reserve(jks_hmap_t *hmap, uint32_t capacity);
 
-bool jks_hmap_get(jks_hmap_t *hmap, const void *key, void **value);
-bool jks_hmap_set(jks_hmap_t *hmap, void *key, void *value);
+void *jks_hmap_get(jks_hmap_t *hmap, const void *key);
+void *jks_hmap_set(jks_hmap_t *hmap, void *key, void *value);
 bool jks_hmap_erase(jks_hmap_t *hmap, const void *key);
 
 jks_hmap_iterator_t jks_hmap_iterator_begin(const jks_hmap_t *hmap);
