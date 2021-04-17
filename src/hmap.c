@@ -13,7 +13,7 @@ struct jks_hmap_object_s
 {
 	JKS_SLIST_ENTRY(struct jks_hmap_object_s) chain;
 	uint32_t hash;
-	void *key;
+	jks_hmap_key_t key;
 	char val[];
 };
 
@@ -98,7 +98,7 @@ bool jks_hmap_reserve(jks_hmap_t *hmap, uint32_t capacity)
 	return rehash(hmap, capacity);
 }
 
-void *jks_hmap_get(jks_hmap_t *hmap, const void *key)
+void *jks_hmap_get(jks_hmap_t *hmap, const jks_hmap_key_t key)
 {
 	if (!hmap->size)
 		return NULL;
@@ -113,7 +113,7 @@ void *jks_hmap_get(jks_hmap_t *hmap, const void *key)
 	return NULL;
 }
 
-void *jks_hmap_set(jks_hmap_t *hmap, void *key, void *value)
+void *jks_hmap_set(jks_hmap_t *hmap, jks_hmap_key_t key, void *value)
 {
 	jks_hmap_bucket_t *bucket;
 	uint32_t hash = hmap->hash_fn(key);
@@ -156,7 +156,7 @@ void *jks_hmap_set(jks_hmap_t *hmap, void *key, void *value)
 	return object->val;
 }
 
-bool jks_hmap_erase(jks_hmap_t *hmap, const void *key)
+bool jks_hmap_erase(jks_hmap_t *hmap, const jks_hmap_key_t key)
 {
 	if (!hmap->size)
 		return true;
@@ -200,7 +200,7 @@ jks_hmap_iterator_t jks_hmap_iterator_end(const jks_hmap_t *hmap)
 	return iterator;
 }
 
-jks_hmap_iterator_t jks_hmap_iterator_find(const jks_hmap_t *hmap, const void *key)
+jks_hmap_iterator_t jks_hmap_iterator_find(const jks_hmap_t *hmap, const jks_hmap_key_t key)
 {
 	if (!hmap->size)
 		return jks_hmap_iterator_end(hmap);
@@ -219,7 +219,7 @@ jks_hmap_iterator_t jks_hmap_iterator_find(const jks_hmap_t *hmap, const void *k
 	return jks_hmap_iterator_end(hmap);
 }
 
-const void *jks_hmap_iterator_get_key(const jks_hmap_iterator_t *iterator)
+jks_hmap_key_t jks_hmap_iterator_get_key(const jks_hmap_iterator_t *iterator)
 {
 	return iterator->object->key;
 }
@@ -264,41 +264,51 @@ void jks_hmap_iterator_next(const jks_hmap_t *hmap, jks_hmap_iterator_t *iterato
 	iterator->bucket = bucket;
 }
 
-uint32_t jks_hmap_hash_uint32(const void *key)
+uint32_t jks_hmap_hash_uint32(const jks_hmap_key_t key)
 {
-	return (uint32_t)(intptr_t)key;
+	return key.u32;
 }
 
-int jks_hmap_cmp_uint32(const void *k1, const void *k2)
+int jks_hmap_cmp_uint32(const jks_hmap_key_t k1, const jks_hmap_key_t k2)
 {
-	return (uint32_t)(intptr_t)k1 - (uint32_t)(intptr_t)k2;
+	return k1.u32 != k2.u32;
 }
 
-uint32_t jks_hmap_hash_string(const void *key)
+uint32_t jks_hmap_hash_uint64(const jks_hmap_key_t key)
 {
-	const char *str = key;
+	return key.u64;
+}
+
+int jks_hmap_cmp_uint64(const jks_hmap_key_t k1, const jks_hmap_key_t k2)
+{
+	return k1.u64 != k2.u64;
+}
+
+uint32_t jks_hmap_hash_string(const jks_hmap_key_t key)
+{
+	const char *str = key.ptr;
 	uint32_t hash = 5381;
 	for (int c; (c = *str); str++)
 		hash = ((hash << 5) + hash) + c;
 	return hash;
 }
 
-int jks_hmap_cmp_string(const void *k1, const void *k2)
+int jks_hmap_cmp_string(const jks_hmap_key_t k1, const jks_hmap_key_t k2)
 {
-	return strcmp(k1, k2);
+	return strcmp(k1.ptr, k2.ptr) != 0;
 }
 
-uint32_t jks_hmap_hash_ptr(const void *key)
+uint32_t jks_hmap_hash_ptr(const jks_hmap_key_t key)
 {
-	if (sizeof(key) == 4)
-		return (uint32_t)(intptr_t)key;
+	if (sizeof(key.ptr) == 4)
+		return key.u32;
 	uint32_t hash = 5381;
-	hash = ((hash << 5) + hash) + (uint32_t)(intptr_t)key;
-	hash = ((hash << 5) + hash) + (uint32_t)((intptr_t)key >> 32);
+	hash = ((hash << 5) + hash) + (key.u64 & 0xFFFFFFFF);
+	hash = ((hash << 5) + hash) + (key.u64 >> 32);
 	return hash;
 }
 
-int jks_hmap_cmp_ptr(const void *k1, const void *k2)
+int jks_hmap_cmp_ptr(const jks_hmap_key_t k1, const jks_hmap_key_t k2)
 {
-	return (uint8_t*)k1 - (uint8_t*)k2;
+	return (uint8_t*)k1.ptr != (uint8_t*)k2.ptr;
 }

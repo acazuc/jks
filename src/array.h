@@ -35,16 +35,15 @@ bool jks_array_shrink(jks_array_t *array);
 
 static inline void *jks_array_get(const jks_array_t *array, uint32_t offset)
 {
-	(void)jks_array_get;
 	return ((uint8_t*)array->data) + array->data_size * offset;
 }
 
 #define JKS_ARRAY_GET(array, offset, type) (&((type*)(array)->data)[offset])
 
 /* data can be NULL to let the data unitialized */
-void *jks_array_push_front(jks_array_t *array, void *data);
-void *jks_array_push_back(jks_array_t *array, void *data);
-void *jks_array_push(jks_array_t *array, void *data, uint32_t offset);
+void *jks_array_push_front(jks_array_t *array, const void *data);
+void *jks_array_push_back(jks_array_t *array, const void *data);
+void *jks_array_push(jks_array_t *array, const void *data, uint32_t offset);
 
 bool jks_array_erase(jks_array_t *array, uint32_t offset);
 
@@ -52,9 +51,8 @@ jks_array_iterator_t jks_array_iterator_begin(const jks_array_t *array);
 jks_array_iterator_t jks_array_iterator_end(const jks_array_t *array);
 jks_array_iterator_t jks_array_iterator_find(const jks_array_t *array, uint32_t offset);
 
-static void *jks_array_iterator_get(const jks_array_iterator_t *iterator)
+static inline void *jks_array_iterator_get(const jks_array_iterator_t *iterator)
 {
-	(void)jks_array_iterator_get;
 	return iterator->data;
 }
 

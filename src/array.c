@@ -95,7 +95,7 @@ bool jks_array_shrink(jks_array_t *array)
 	return true;
 }
 
-void *jks_array_push_front(jks_array_t *array, void *data)
+void *jks_array_push_front(jks_array_t *array, const void *data)
 {
 	if (!jks_array_resize(array, array->size + 1))
 		return NULL;
@@ -106,7 +106,7 @@ void *jks_array_push_front(jks_array_t *array, void *data)
 	return dst;
 }
 
-void *jks_array_push_back(jks_array_t *array, void *data)
+void *jks_array_push_back(jks_array_t *array, const void *data)
 {
 	if (!jks_array_resize(array, array->size + 1))
 		return NULL;
@@ -116,7 +116,7 @@ void *jks_array_push_back(jks_array_t *array, void *data)
 	return dst;
 }
 
-void *jks_array_push(jks_array_t *array, void *data, uint32_t offset)
+void *jks_array_push(jks_array_t *array, const void *data, uint32_t offset)
 {
 	if (!jks_array_resize(array, array->size + 1))
 		return NULL;
